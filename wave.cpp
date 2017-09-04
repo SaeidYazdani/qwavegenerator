@@ -149,18 +149,24 @@ void WaveGenerator::generateAdvancedSine()
                 numTopPeakSamples << "numNormalTopSamples" << numNormalTopSamples <<
                 "numSineSamples" << numSineSamples;
 
+
+
+    float a2 = (settings->amp)/std::sin(piTimesFreq * numSineSamples * step);
+
+    qDebug() << "previous value of the peak is :" << settings->amp ;
+    qDebug() << "new value of the peak is :" << a2 ;
+
     if(numTopPeakSamples > 0) {
         //first, we have to reach to peak within 'numSineSamples' samples by increasing the frequency for 0 to peak
         double extraFreq = 1 + ((double)numSineSamples / settings->sampleRate);
         qDebug() << "extraFreq" << extraFreq;
         for(int i = 0; i < numSineSamples; ++i) {
             series.append(x,
-                          settings->amp  *
+                          a2  *
                           std::sin( piTimesFreq * /*extraFreq **/ x +  settings->phase) + settings->offset
                           );
             x += step;
         }
-
         //fill top samples
         double distAmp;
         std::uniform_real_distribution<double> rand;
