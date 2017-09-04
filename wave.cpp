@@ -118,8 +118,10 @@ void WaveGenerator::generateNormalSine()
 }
 
 //TODO move rand and stuff to calss level
-auto seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
-std::mt19937 randGen(seed);
+static auto seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+static std::mt19937 randGen(seed);
+static double distAmp;
+static std::uniform_real_distribution<double> random;
 //END FREE STUFF
 
 void WaveGenerator::generateAdvancedSine()
@@ -134,50 +136,44 @@ void WaveGenerator::generateAdvancedSine()
     double piTimesFreq = _PI_TIMES_TWO  *  settings->freq;
     int extraSamples = (settings->topHalf + settings->botHalf);
 
-//#ifdef QT_DEBUG
-//    settings->topHalf = 50;
-//#endif
 
     int numHalfSamples = settings->sampleRate / 2;
     int numTopPeakSamples = (((double)settings->topHalf / 100.0) * numHalfSamples);
     int numNormalTopSamples = numHalfSamples - numTopPeakSamples;
     int numBotPeakSamples = (((double)settings->botHalf / 100.0) * numHalfSamples);
     int numNormalBotSamples = numHalfSamples - numBotPeakSamples;
-    int numSineSamples = numNormalTopSamples / 2;
+    int numTopSineSamples = numNormalTopSamples / 2;
+    int numBotSineSamples = numNormalBotSamples / 2;
 
     qDebug() << "numHalfSamples" << numHalfSamples << "numTopPeakSamples" <<
                 numTopPeakSamples << "numNormalTopSamples" << numNormalTopSamples <<
-                "numSineSamples" << numSineSamples;
+                "numSineSamples" << numTopSineSamples;
 
 
 
-    float a2 = (settings->amp)/std::sin(piTimesFreq * numSineSamples * step);
-
-    qDebug() << "previous value of the peak is :" << settings->amp ;
-    qDebug() << "new value of the peak is :" << a2 ;
+    double a2 = (settings->amp)/(std::sin(piTimesFreq * numTopSineSamples * step + settings->phase) + settings->offset);
 
     if(numTopPeakSamples > 0) {
-        //first, we have to reach to peak within 'numSineSamples' samples by increasing the frequency for 0 to peak
-        double extraFreq = 1 + ((double)numSineSamples / settings->sampleRate);
-        qDebug() << "extraFreq" << extraFreq;
-        for(int i = 0; i < numSineSamples; ++i) {
+
+        //fill the rising edge
+        for(int i = 0; i < numTopSineSamples; ++i) {
             series.append(x,
                           a2  *
-                          std::sin( piTimesFreq * /*extraFreq **/ x +  settings->phase) + settings->offset
+                          std::sin( piTimesFreq * x +  settings->phase) + settings->offset
                           );
             x += step;
         }
+
         //fill top samples
-        double distAmp;
-        std::uniform_real_distribution<double> rand;
         if(settings->topDist > 0) { //top distortion
             distAmp = (settings->topDist  / 100.0) * settings->amp; //% of dist
-            rand =  std::uniform_real_distribution<double>(-distAmp, distAmp);
+            random = std::uniform_real_distribution<double>(-distAmp, distAmp);
         }
         for(int i = 0; i < numTopPeakSamples; ++i) {
 
             double y = settings->amp;
-            if(settings->topDist > 0) {
+
+            if(settings->topDist > 0) { //if we have distortion enabled
                 if(settings->topDistType == DistortionType::Linear) {
                     if(i%2 == 0) {
                         y += distAmp;
@@ -185,7 +181,7 @@ void WaveGenerator::generateAdvancedSine()
                         y -= distAmp;
                     }
                 } else { //its random
-                    y += rand(randGen);
+                    y += random(randGen);
                 }
             }
 
@@ -196,16 +192,16 @@ void WaveGenerator::generateAdvancedSine()
             x += step;
         }
 
-        //fill the other normal of the half cycle
-        for(int i = 0; i < numSineSamples; ++i) {
+        //fill the falling edge
+        for(int i = 0; i < numTopSineSamples; ++i) {
             series.append(x,
-                          settings->amp  *
-                          std::sin( piTimesFreq * /*extraFreq*/ x +  settings->phase) + settings->offset
+                          a2  *
+                          std::sin( piTimesFreq * x +  settings->phase) + settings->offset
                           );
             x += step;
         }
 
-    } else { //fill the firt half cycle normaly
+    } else { //fill the first half cycle normaly
         for(int i = 0; i < numHalfSamples; ++i) {
             series.append(x,
                           settings->amp  *
@@ -216,9 +212,56 @@ void WaveGenerator::generateAdvancedSine()
     }
 
     //TODO FILL THE SECOND HALF OF THE CYCLE
+    a2 = (settings->amp)/(std::sin(piTimesFreq * numBotSineSamples * step + settings->phase) + settings->offset);
     if(numBotPeakSamples > 0) {
 
-    } else {
+        //fill the rising edge
+        for(int i = 0; i < numBotSineSamples; ++i) {
+            series.append(x,
+                          a2  *
+                          std::sin( piTimesFreq * x +  settings->phase) + settings->offset
+                          );
+            x += step;
+        }
+
+        //fill top samples
+        if(settings->botDist > 0) { //top distortion
+            distAmp = (settings->botDist  / 100.0) * -1 * settings->amp; //% of dist
+            random =  std::uniform_real_distribution<double>(-distAmp, distAmp);
+        }
+        for(int i = 0; i < numBotPeakSamples; ++i) {
+
+            double y = -1* settings->amp;
+
+            if(settings->botDist > 0) { //if we have distortion enabled
+                if(settings->botDistType == DistortionType::Linear) {
+                    if(i%2 == 0) {
+                        y += distAmp;
+                    } else {
+                        y -= distAmp;
+                    }
+                } else { //its random
+                    y += random(randGen);
+                }
+            }
+
+            series.append(x,
+                          y
+                          + settings->offset
+                          );
+            x += step;
+        }
+
+        //fill the falling edge
+        for(int i = 0; i < numBotSineSamples; ++i) {
+            series.append(x,
+                          a2  *
+                          std::sin( piTimesFreq * x +  settings->phase) + settings->offset
+                          );
+            x += step;
+        }
+
+    } else { //fill the first half cycle normaly
         for(int i = 0; i < numHalfSamples; ++i) {
             series.append(x,
                           settings->amp  *
@@ -228,12 +271,9 @@ void WaveGenerator::generateAdvancedSine()
         }
     }
 
-
-    //last point explicitly at (y = 0 + offset) to account for rounding errors
-    series.append(x,
-                  settings->amp  *
-                  std::sin(settings->phase) + settings->offset
-                  );
+    //last point explicitly at (y = 0 + offset) to account for rounding errors in step calculation
+    series.append((1.0 / settings->freq)
+                , settings->offset);
 
     emit notifyGenerationComplete();
 
