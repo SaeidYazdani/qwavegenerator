@@ -12,6 +12,7 @@ using namespace QtCharts;
 #include <type_traits>
 #include <random>
 #include <chrono>
+#include <set>
 
 using namespace std;
 
@@ -65,22 +66,32 @@ bool saveNormalSineToCSV(const QLineSeries& series,
     return false;
 }
 
-bool saveAdvancedSineToCSV(const std::shared_ptr<WaveSettings> settings,
+bool saveAdvancedSineToCSV(const WaveSettings* const settings,
                            const QString& fileName,
                            int cycles)
 {
     QtCharts::QLineSeries series;
     std::vector<QPointF> points;
+    WaveSettings ws = *settings; //local copy of the settings
+
+    //if linear increase every nth cycle was requested
+    std::set<int> everyNth;
+
+    if(settings->linAmpInc != 0) { //get the cycles to inc the amp!
+        for (int i = 0; i <= cycles; ++i) {
+            everyNth.insert(settings->ampIncEvery + i);
+        }
+    }
+
 
     for (int i = 0; i < cycles; ++i) {
 
-        if(settings->linAmpInc) {
-
-        } else {
-
+        if(*everyNth.find(i) == i) {
+            ws.amp += ws.ampInc;
         }
 
-        WaveGenerator wg(settings, series, nullptr);
+        WaveGenerator wg(std::make_shared<WaveSettings>(ws), series, nullptr);
+        wg.generateAdvancedSine(&points, false);
     }
 
 
@@ -299,7 +310,9 @@ void WaveGenerator::generateAdvancedSine(std::vector<QPointF>* output, bool isFo
     if(!isForSaving) {
         emit notifyGenerationComplete(); //ask to update UI
     } else { //function was called just for filling the points in the series
-
+        for (int i = 0; i < series.count(); ++i) {
+            output->push_back(series.at(i));
+        }
     }
 }
 

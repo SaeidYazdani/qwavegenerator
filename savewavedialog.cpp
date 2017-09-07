@@ -30,8 +30,13 @@ SaveWaveDialog::~SaveWaveDialog()
 void SaveWaveDialog::on_buttonBox_accepted()
 {
 
+    if(!settings->isAdvanced()) {
         saveNormalSineToCSV(series, settings.get(), filePath,
                             ui->leNumCycles->text().toInt());
+    } else {
+        saveAdvancedSineToCSV(settings.get(), filePath,
+                              ui->leNumCycles->text().toInt());
+    }
 }
 
 

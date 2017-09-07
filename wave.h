@@ -85,13 +85,14 @@ class WaveGenerator : public QObject {
 public:
     WaveGenerator(std::shared_ptr<WaveSettings> settings, QtCharts::QLineSeries& series, QObject* parent = 0);
     void generate();
+    void generateAdvancedSine(std::vector<QPointF>* output = nullptr, bool isForSaving = false);
 
 private:
     //disable default copy constructor and assignement operator
     explicit WaveGenerator(const WaveGenerator& other) = delete;
     WaveGenerator& operator= (const WaveGenerator& other) = delete;
     void generateNormalSine();
-    void generateAdvancedSine(std::vector<QPointF>* output = nullptr, bool isForSaving = false);
+
 
 
     std::shared_ptr<WaveSettings> settings;
@@ -120,7 +121,7 @@ bool saveNormalSineToCSV(const QtCharts::QLineSeries& series,
                          const QString& file,
                          int cycles = 1);
 
-bool saveAdvancedSineToCSV(const std::shared_ptr<WaveSettings> settings,
+bool saveAdvancedSineToCSV(const WaveSettings* const settings,
                          const QString& fileName,
                          int cycles = 1);
 
