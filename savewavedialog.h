@@ -29,10 +29,13 @@ private slots:
 
     void on_buttonBox_rejected();
 
+    void on_btnBrowse_clicked();
+
 private:
     Ui::SaveWaveDialog *ui;
     shared_ptr<WaveSettings> settings;
     QtCharts::QLineSeries& series;
+    QString filePath;
 
     QIntValidator* validator;
 };

@@ -65,6 +65,29 @@ bool saveNormalSineToCSV(const QLineSeries& series,
     return false;
 }
 
+bool saveAdvancedSineToCSV(const std::shared_ptr<WaveSettings> settings,
+                           const QString& fileName,
+                           int cycles)
+{
+    QtCharts::QLineSeries series;
+    std::vector<QPointF> points;
+
+    for (int i = 0; i < cycles; ++i) {
+
+        if(settings->linAmpInc) {
+
+        } else {
+
+        }
+
+        WaveGenerator wg(settings, series, nullptr);
+    }
+
+
+
+    return false;
+}
+
 QString WaveSettings::debugnformation()
 {
     return QString("FREQ=%1 SR=%2 AMP=%3 %4=%5 TH=%6 TD=%7 TDT=%8 BH=%9 BD=%10 BDT=%11").
@@ -124,11 +147,9 @@ static double distAmp;
 static std::uniform_real_distribution<double> random;
 //END FREE STUFF
 
-void WaveGenerator::generateAdvancedSine()
+void WaveGenerator::generateAdvancedSine(std::vector<QPointF>* output, bool isForSaving)
 {
-
-
-
+    //FIXME Changing phase will screw up everything!!!!!
 
     qreal step = (1.0 / settings->freq) / settings->sampleRate;
 
@@ -151,7 +172,7 @@ void WaveGenerator::generateAdvancedSine()
 
 
 
-    double a2 = (settings->amp)/(std::sin(piTimesFreq * numTopSineSamples * step + settings->phase) + settings->offset);
+    double a2 = (settings->amp)/(std::sin(piTimesFreq * numTopSineSamples * step + settings->phase));
 
     if(numTopPeakSamples > 0) {
 
@@ -212,7 +233,7 @@ void WaveGenerator::generateAdvancedSine()
     }
 
     //TODO FILL THE SECOND HALF OF THE CYCLE
-    a2 = (settings->amp)/(std::sin(piTimesFreq * numBotSineSamples * step + settings->phase) + settings->offset);
+    a2 = (settings->amp)/(std::sin(piTimesFreq * numBotSineSamples * step + settings->phase));
     if(numBotPeakSamples > 0) {
 
         //fill the rising edge
@@ -275,8 +296,11 @@ void WaveGenerator::generateAdvancedSine()
     series.append((1.0 / settings->freq)
                 , settings->offset);
 
-    emit notifyGenerationComplete();
+    if(!isForSaving) {
+        emit notifyGenerationComplete(); //ask to update UI
+    } else { //function was called just for filling the points in the series
 
+    }
 }
 
 

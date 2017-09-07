@@ -76,6 +76,8 @@ namespace QtCharts {
     class QLineSeries;
 }
 
+class QPointF;
+
 class WaveGenerator : public QObject {
 
     Q_OBJECT
@@ -89,7 +91,8 @@ private:
     explicit WaveGenerator(const WaveGenerator& other) = delete;
     WaveGenerator& operator= (const WaveGenerator& other) = delete;
     void generateNormalSine();
-    void generateAdvancedSine();
+    void generateAdvancedSine(std::vector<QPointF>* output = nullptr, bool isForSaving = false);
+
 
     std::shared_ptr<WaveSettings> settings;
     QtCharts::QLineSeries& series;
@@ -115,6 +118,10 @@ QString waveTypeFromIndex(int index);
 bool saveNormalSineToCSV(const QtCharts::QLineSeries& series,
                          const WaveSettings* const settings,
                          const QString& file,
+                         int cycles = 1);
+
+bool saveAdvancedSineToCSV(const std::shared_ptr<WaveSettings> settings,
+                         const QString& fileName,
                          int cycles = 1);
 
 #endif // WAVE_TYPES_H

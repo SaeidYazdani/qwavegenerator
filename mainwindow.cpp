@@ -25,6 +25,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(wg, &WaveGenerator::notifyGenerationComplete,
             this, &MainWindow::onGenerationCompleted);
     ui->setupUi(this);
+
     setupUiWidgets();
 }
 
