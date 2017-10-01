@@ -45,8 +45,6 @@ void AdvancedSettingsWidget::onWaveSettingsUpdated()
                 waveSettings->botDistType = DistortionType::Linear :
                 waveSettings->botDistType = DistortionType::Random;
 
-
-
         waveSettings->linAmpInc = ui->chbLinearIncrease->isChecked();
         if(waveSettings->linAmpInc) {
             waveSettings->ampInc = ui->lePeakIncrease->text().toDouble();

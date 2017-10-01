@@ -49,7 +49,7 @@ bool saveNormalSineToCSV(const QLineSeries& series,
         }
 
         if(cycles > 1) {
-             qreal T = 1.0 / settings->freq;
+            qreal T = 1.0 / settings->freq;
             //write extra cycles
             for (int i = 1; i < cycles; ++i) {
                 for(int j = 1; j < series.points().size(); ++j) {
@@ -75,26 +75,22 @@ bool saveAdvancedSineToCSV(const WaveSettings* const settings,
     WaveSettings ws = *settings; //local copy of the settings
 
     //if linear increase every nth cycle was requested
-    std::set<int> everyNth;
+    std::vector<int> everyNth;
 
-    if(settings->linAmpInc != 0) { //get the cycles to inc the amp!
-        for (int i = 0; i <= cycles; ++i) {
-            everyNth.insert(settings->ampIncEvery + i);
+    if(settings->linAmpInc && ws.ampIncEvery > 0) { //get the cycles to inc the amp!
+        for (int i = 0; i <= cycles; i += ws.ampIncEvery) {
+            everyNth.push_back(settings->ampIncEvery + i);
         }
     }
 
 
     for (int i = 0; i < cycles; ++i) {
-
-        if(*everyNth.find(i) == i) {
-            ws.amp += ws.ampInc;
+        if(find(begin(everyNth), end(everyNth), i) != end(everyNth))  {
+            ws.amp += ws.ampInc * i;
         }
-
         WaveGenerator wg(std::make_shared<WaveSettings>(ws), series, nullptr);
-        wg.generateAdvancedSine(&points, false);
+        wg.generateAdvancedSine(&points, true);
     }
-
-
 
     return false;
 }
@@ -118,9 +114,9 @@ void WaveGenerator::generate()
     switch(settings->waveType) {
         case 0:
             if(settings->isAdvanced()) {
-                generateNormalSine();
-            } else {
                 generateAdvancedSine();
+            } else {
+                generateNormalSine();
             }
             break;
         default:
@@ -305,7 +301,7 @@ void WaveGenerator::generateAdvancedSine(std::vector<QPointF>* output, bool isFo
 
     //last point explicitly at (y = 0 + offset) to account for rounding errors in step calculation
     series.append((1.0 / settings->freq)
-                , settings->offset);
+                  , settings->offset);
 
     if(!isForSaving) {
         emit notifyGenerationComplete(); //ask to update UI

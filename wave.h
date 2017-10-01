@@ -56,7 +56,7 @@ struct WaveSettings {
 
     QString debugnformation();
     const bool isAdvanced() const {
-        return (topHalf == 0 && botHalf == 0 && !linAmpInc);
+        return (topHalf != 0 || botHalf != 0);
     }
 };
 
