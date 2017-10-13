@@ -37,7 +37,7 @@ struct WaveSettings {
     int topHalf = 0;
     int botHalf = 0;
     int topDist = 0;
-    int botDist;
+    int botDist = 0;
 
     DistortionType topDistType = DistortionType::Linear;
     DistortionType botDistType = DistortionType::Linear;
@@ -86,6 +86,7 @@ public:
     WaveGenerator(std::shared_ptr<WaveSettings> settings, QtCharts::QLineSeries& series, QObject* parent = 0);
     void generate();
     void generateAdvancedSine(std::vector<QPointF>* output = nullptr, bool isForSaving = false);
+    const std::shared_ptr<WaveSettings> getSettings() const {return settings;}
 
 private:
     //disable default copy constructor and assignement operator

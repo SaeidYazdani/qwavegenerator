@@ -71,27 +71,37 @@ bool saveAdvancedSineToCSV(const WaveSettings* const settings,
                            int cycles)
 {
     QtCharts::QLineSeries series;
-    std::vector<QPointF> points;
+    std::vector<std::vector<QPointF>> points;
     WaveSettings ws = *settings; //local copy of the settings
 
-    //if linear increase every nth cycle was requested
-    std::vector<int> everyNth;
-
-    if(settings->linAmpInc && ws.ampIncEvery > 0) { //get the cycles to inc the amp!
-        for (int i = 0; i <= cycles; i += ws.ampIncEvery) {
-            everyNth.push_back(settings->ampIncEvery + i);
-        }
-    }
-
-
-    for (int i = 0; i < cycles; ++i) {
-        if(find(begin(everyNth), end(everyNth), i) != end(everyNth))  {
-            ws.amp += ws.ampInc * i;
-        }
+    for(int i = 0; i < cycles; ++i) {
+        points.push_back(std::vector<QPointF>());
         WaveGenerator wg(std::make_shared<WaveSettings>(ws), series, nullptr);
-        wg.generateAdvancedSine(&points, true);
+        wg.generateAdvancedSine(&points[i], true);
+
+        ws.offset += settings->offset;
     }
 
+    QFile out(fileName);
+    double baseOffset = 0;
+    int x = 0;
+    if(out.open(QIODevice::Truncate | QIODevice::WriteOnly)) {
+
+        QTextStream output(&out);
+
+        for(int i = 0; i < points.size(); ++i) {
+            for (int j = 0; j < points[i].size(); ++j) {
+                output << x++ << "," << points[i][j].y() + baseOffset  << "\r\n";
+            }
+//            baseOffset += settings->ampInc;
+            baseOffset += settings->ampInc;
+        }
+
+        output.flush();
+        out.close();
+        return true;
+
+    }
     return false;
 }
 
@@ -255,7 +265,7 @@ void WaveGenerator::generateAdvancedSine(std::vector<QPointF>* output, bool isFo
         //fill top samples
         if(settings->botDist > 0) { //top distortion
             distAmp = (settings->botDist  / 100.0) * -1 * settings->amp; //% of dist
-            random =  std::uniform_real_distribution<double>(-distAmp, distAmp);
+            random =  std::uniform_real_distribution<double>(distAmp, distAmp * -2);
         }
         for(int i = 0; i < numBotPeakSamples; ++i) {
 
@@ -309,6 +319,8 @@ void WaveGenerator::generateAdvancedSine(std::vector<QPointF>* output, bool isFo
         for (int i = 0; i < series.count(); ++i) {
             output->push_back(series.at(i));
         }
+
+        series.clear();
     }
 }
 
